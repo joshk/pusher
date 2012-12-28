@@ -4,7 +4,6 @@ import (
     "crypto/md5"
     "crypto/hmac"
     "crypto/sha256"
-    "fmt"
     "io"
     "strconv"
     "encoding/hex"
@@ -12,7 +11,6 @@ import (
     "strings"
     "net/url"
     "net/http"
-    //"log"
     "time"
     "bytes"
 )
@@ -37,6 +35,26 @@ type Payload struct {
 
 func NewClient(appid, key, secret string, secure bool) *Client {
     return &Client{appid, key, secret, secure}
+}
+
+
+func (c *Client) Publish(data, event string, channels ...string) error {
+    timestamp  := c.stringTimestamp()
+    
+    content, err := c.jsonifyData(data, event, channels)
+    if err != nil {
+        return err
+    }
+    
+    md5Content := c.md5(content)
+    
+    signature  := c.signature(timestamp, md5Content)
+    
+    query := c.encodedQuery(timestamp, md5Content, signature)
+
+    err = c.post(content, c.publishUrl(), query)
+
+    return err
 }
 
 
@@ -65,13 +83,13 @@ func (c *Client) encodedQuery(timestamp, md5Content, signature string) string {
 }
 
 
-func (c *Client) jsonifyData(data, event string, channels []string) string {
+func (c *Client) jsonifyData(data, event string, channels []string) (string, error) {
     content := Payload{event, channels, data}
     b, err := json.Marshal(content)
     if err != nil {
-        fmt.Println("error:", err)
+        return "", err
     }
-    return string(b)
+    return string(b), nil
 }
 
 
@@ -80,7 +98,6 @@ func (c *Client) post(content string, fullUrl string, query string) error {
 
     postUrl, err := url.Parse(fullUrl)
     if err != nil {
-        //log.Fatal(err)
         return err
     }
 
@@ -94,12 +111,10 @@ func (c *Client) post(content string, fullUrl string, query string) error {
 
     resp, err := http.Post(postUrl.String(), "application/json", buffer)
     if err != nil {
-        //log.Fatal("HTTP Error: ", err)
         return err
     }
     
     defer resp.Body.Close()
-    //fmt.Println(resp)
   
     return nil
 }
@@ -128,17 +143,3 @@ func (c *Client) stringTimestamp() string {
 }
 
 
-func (c *Client) Publish(data, event string, channels ...string) error {
-    timestamp  := c.stringTimestamp()
-    
-    content    := c.jsonifyData(data, event, channels)
-    md5Content := c.md5(content)
-    
-    signature  := c.signature(timestamp, md5Content)
-    
-    query := c.encodedQuery(timestamp, md5Content, signature)
-
-    err := c.post(content, c.publishUrl(), query)
-
-    return err
-}
