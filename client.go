@@ -1,14 +1,8 @@
 package pusher
 
 import (
-    "crypto/md5"
-    "crypto/hmac"
-    "crypto/sha256"
-    "io"
     "strconv"
-    "encoding/hex"
     "encoding/json"
-    "strings"
     "net/url"
     "net/http"
     "time"
@@ -40,46 +34,17 @@ func NewClient(appid, key, secret string, secure bool) *Client {
 
 func (c *Client) Publish(data, event string, channels ...string) error {
     timestamp  := c.stringTimestamp()
-    
+
     content, err := c.jsonifyData(data, event, channels)
     if err != nil {
         return err
     }
-    
-    md5Content := c.md5(content)
-    
-    signature  := c.signature(timestamp, md5Content)
-    
-    query := c.encodedQuery(timestamp, md5Content, signature)
 
-    err = c.post(content, c.publishUrl(), query)
+    signature := Signature{c.key, c.secret, "POST", c.publishPath(), timestamp, AuthVersion, content}
+
+    err = c.post(content, c.publishUrl(), signature.EncodedQuery())
 
     return err
-}
-
-
-func (c *Client) md5(content string) string {
-    hash := md5.New()
-    io.WriteString(hash, content)
-    return hex.EncodeToString(hash.Sum(nil))
-}
-
-
-func (c *Client) hmacSha256(content string) string {
-    hash := hmac.New(sha256.New, []byte(c.secret))
-    io.WriteString(hash, content)
-    return hex.EncodeToString(hash.Sum(nil))
-}
-
-
-func (c *Client) encodedQuery(timestamp, md5Content, signature string) string {
-    query := make(url.Values)
-    query.Set("auth_key",       c.key)
-    query.Set("auth_timestamp", timestamp)
-    query.Set("auth_version",   AuthVersion)
-    query.Set("body_md5",       md5Content)
-    query.Set("auth_signature", signature)
-    return query.Encode()
 }
 
 
@@ -101,12 +66,7 @@ func (c *Client) post(content string, fullUrl string, query string) error {
         return err
     }
 
-    if c.secure {
-        postUrl.Scheme   = "https"
-    } else {
-        postUrl.Scheme   = "http"
-    }
-
+    postUrl.Scheme   = c.scheme()
     postUrl.RawQuery = query
 
     resp, err := http.Post(postUrl.String(), "application/json", buffer)
@@ -120,26 +80,26 @@ func (c *Client) post(content string, fullUrl string, query string) error {
 }
 
 
-func (c *Client) publishPath() string {
-    return "apps/" + c.appid + "/events"
+func (c *Client) scheme() string {
+    var s string
+    if c.secure {
+        s = "https"
+    } else {
+        s = "http"
+    }
+    return s
 }
 
+func (c *Client) publishPath() string {
+    return "/apps/" + c.appid + "/events"
+}
 
 func (c *Client) publishUrl() string {
-    return "http://" + Endpoint + "/" + c.publishPath()
+    return "http://" + Endpoint + c.publishPath()
 }
-
-
-func (c *Client) signature(timestamp, md5Content string) string {
-    authParts := strings.Join([]string{"auth_key=" + c.key, "auth_timestamp=" + timestamp, "auth_version=" + AuthVersion, "body_md5=" + md5Content}, "&")
-    signatureContent := strings.Join([]string{"POST", "/" + c.publishPath(), authParts}, "\n")
-    return c.hmacSha256(signatureContent)
-}
-
 
 func (c *Client) stringTimestamp() string {
     t := time.Now()
     return strconv.FormatInt(t.Unix(), 10)
 }
-
 
