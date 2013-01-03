@@ -1,21 +1,19 @@
 package pusher
 
 import (
-    "crypto/md5"
     "crypto/hmac"
+    "crypto/md5"
     "crypto/sha256"
-    "io"
     "encoding/hex"
-    "strings"
+    "io"
     "net/url"
+    "strings"
 )
 
-
 type Signature struct {
-    key, secret string
+    key, secret                                   string
     method, path, timestamp, authVersion, content string
 }
-
 
 func (s *Signature) Sign() string {
     authParts := strings.Join([]string{s.auth_key(), s.auth_timestamp(), s.auth_version(), s.body_md5()}, "&")
@@ -25,10 +23,10 @@ func (s *Signature) Sign() string {
 
 func (s *Signature) EncodedQuery() string {
     query := url.Values{}
-    query.Set("auth_key",       s.key)
+    query.Set("auth_key", s.key)
     query.Set("auth_timestamp", s.timestamp)
-    query.Set("auth_version",   s.authVersion)
-    query.Set("body_md5",       s.md5Content())
+    query.Set("auth_version", s.authVersion)
+    query.Set("body_md5", s.md5Content())
     query.Set("auth_signature", s.Sign())
     return query.Encode()
 }

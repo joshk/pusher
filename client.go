@@ -1,19 +1,19 @@
 package pusher
 
 import (
-    "strconv"
-    "encoding/json"
-    "net/url"
-    "net/http"
-    "time"
     "bytes"
+    "encoding/json"
+    "fmt"
+    "io/ioutil"
+    "net/http"
+    "net/url"
+    "strconv"
+    "time"
 )
-
 
 var Endpoint = "api.pusherapp.com"
 
 const AuthVersion = "1.0"
-
 
 type Client struct {
     appid, key, secret string
@@ -21,19 +21,17 @@ type Client struct {
 }
 
 type Payload struct {
-    Name        string `json:"name"`
-    Channels  []string `json:"channels"`
-    Data        string `json:"data"`
+    Name     string   `json:"name"`
+    Channels []string `json:"channels"`
+    Data     string   `json:"data"`
 }
-
 
 func NewClient(appid, key, secret string, secure bool) *Client {
     return &Client{appid, key, secret, secure}
 }
 
-
 func (c *Client) Publish(data, event string, channels ...string) error {
-    timestamp  := c.stringTimestamp()
+    timestamp := c.stringTimestamp()
 
     content, err := c.jsonifyData(data, event, channels)
     if err != nil {
@@ -47,7 +45,6 @@ func (c *Client) Publish(data, event string, channels ...string) error {
     return err
 }
 
-
 func (c *Client) jsonifyData(data, event string, channels []string) (string, error) {
     content := Payload{event, channels, data}
     b, err := json.Marshal(content)
@@ -57,7 +54,6 @@ func (c *Client) jsonifyData(data, event string, channels []string) (string, err
     return string(b), nil
 }
 
-
 func (c *Client) post(content string, fullUrl string, query string) error {
     buffer := bytes.NewBuffer([]byte(content))
 
@@ -66,19 +62,23 @@ func (c *Client) post(content string, fullUrl string, query string) error {
         return err
     }
 
-    postUrl.Scheme   = c.scheme()
+    postUrl.Scheme = c.scheme()
     postUrl.RawQuery = query
 
     resp, err := http.Post(postUrl.String(), "application/json", buffer)
     if err != nil {
-        return err
+        return fmt.Errorf("pusher: POST failed: %s", err)
     }
-    
+
+    if resp.StatusCode == 401 {
+        b, _ := ioutil.ReadAll(resp.Body)
+        return fmt.Errorf("pusher: POST failed: %s", b)
+    }
+
     defer resp.Body.Close()
-  
+
     return nil
 }
-
 
 func (c *Client) scheme() string {
     var s string
@@ -102,4 +102,3 @@ func (c *Client) stringTimestamp() string {
     t := time.Now()
     return strconv.FormatInt(t.Unix(), 10)
 }
-
