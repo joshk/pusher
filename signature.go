@@ -22,12 +22,13 @@ func (s *Signature) Sign() string {
 }
 
 func (s *Signature) EncodedQuery() string {
-    query := url.Values{}
-    query.Set("auth_key", s.key)
-    query.Set("auth_timestamp", s.timestamp)
-    query.Set("auth_version", s.authVersion)
-    query.Set("body_md5", s.md5Content())
-    query.Set("auth_signature", s.Sign())
+    query := url.Values{
+        "auth_key":       {s.key},
+        "auth_timestamp": {s.timestamp},
+        "auth_version":   {s.authVersion},
+        "body_md5":       {s.md5Content()},
+        "auth_signature": {s.Sign()},
+    }
     return query.Encode()
 }
 
