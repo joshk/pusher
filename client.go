@@ -88,11 +88,11 @@ func (c *Client) scheme() string {
 }
 
 func (c *Client) publishPath() string {
-    return "/apps/" + c.appid + "/events"
+    return fmt.Sprintf("/apps/%s/events", c.appid)
 }
 
 func (c *Client) publishUrl() string {
-    return "http://" + Endpoint + c.publishPath()
+    return fmt.Sprintf("http://%s%s", Endpoint, c.publishPath())
 }
 
 func (c *Client) stringTimestamp() string {
