@@ -6,37 +6,39 @@ So much to write, so little information to tell you right now :)
 
 ## Example
 
-    package main
+```go
+package main
 
-    import (
-        "fmt"
-        "github.com/timonv/pusher"
-        "time"
-    )
+import (
+    "fmt"
+    "github.com/timonv/pusher"
+    "time"
+)
 
-    func main() {
-        client := pusher.NewClient("appId", "key", "secret", false)
+func main() {
+    client := pusher.NewClient("appId", "key", "secret", false)
 
-        done := make(chan bool)
+    done := make(chan bool)
 
-        go func() {
-            err := client.Publish("test", "test", "test")
-            if err != nil {
-                fmt.Printf("Error %s\n", err)
-            } else {
-                fmt.Print("Message Published!")
-            }
-            done <- true
-        }()
-
-        // A basic timeout to make sure we don't wait forever
-        select {
-        case <-done:
-            fmt.Println("\nDone")
-        case <-time.After(1 * time.Minute):
-            fmt.Println("\n:-( Timeout")
+    go func() {
+        err := client.Publish("test", "test", "test")
+        if err != nil {
+            fmt.Printf("Error %s\n", err)
+        } else {
+            fmt.Print("Message Published!")
         }
+        done <- true
+    }()
+
+    // A basic timeout to make sure we don't wait forever
+    select {
+    case <-done:
+        fmt.Println("\nDone")
+    case <-time.After(1 * time.Minute):
+        fmt.Println("\n:-( Timeout")
     }
+}
+```
 
 
 ## License
