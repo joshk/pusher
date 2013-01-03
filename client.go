@@ -81,13 +81,10 @@ func (c *Client) post(content string, fullUrl string, query string) error {
 }
 
 func (c *Client) scheme() string {
-    var s string
     if c.secure {
-        s = "https"
-    } else {
-        s = "http"
+        return "https"
     }
-    return s
+    return "http"
 }
 
 func (c *Client) publishPath() string {
