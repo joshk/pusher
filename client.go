@@ -70,12 +70,12 @@ func (c *Client) post(content string, fullUrl string, query string) error {
         return fmt.Errorf("pusher: POST failed: %s", err)
     }
 
+    defer resp.Body.Close()
+
     if resp.StatusCode == 401 {
         b, _ := ioutil.ReadAll(resp.Body)
         return fmt.Errorf("pusher: POST failed: %s", b)
     }
-
-    defer resp.Body.Close()
 
     return nil
 }
