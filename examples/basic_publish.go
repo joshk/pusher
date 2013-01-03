@@ -14,19 +14,17 @@ func main() {
     go func() {
         err := client.Publish("test", "test", "test")
         if err != nil {
-            fmt.Printf("E %s\n", err)
+            fmt.Printf("Error %s\n", err)
         } else {
-            fmt.Print(".")
+            fmt.Println("Message Published!")
         }
         done <- true
     }()
 
     select {
     case <-done:
-        fmt.Println("\ndone")
+        fmt.Println("Done :-)")
     case <-time.After(1 * time.Minute):
-        fmt.Println("timeout")
+        fmt.Println("Timeout :-(")
     }
-
-    fmt.Println("")
 }

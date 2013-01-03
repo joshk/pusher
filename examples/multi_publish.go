@@ -20,14 +20,14 @@ func main() {
                 if err != nil {
                     fmt.Printf("E %s\n", err)
                 } else {
-                    fmt.Print(".")
+                    fmt.Println(".")
                 }
             }
         }()
     }
 
     go func() {
-        for i := 0; i < 500; i++ {
+        for i := 0; i < 5000; i++ {
             messages <- "test"
         }
         done <- true
@@ -35,9 +35,9 @@ func main() {
 
     select {
     case <-done:
-        fmt.Println("\nDone")
+        fmt.Println("Done :-)")
     case <-time.After(1 * time.Minute):
-        fmt.Println("timeout")
+        fmt.Println("Timeout :-(")
     }
 
     fmt.Println("")
