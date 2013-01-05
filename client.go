@@ -94,7 +94,7 @@ func (c *Client) Channels(queryParameters map[string]string) (*ChannelList, erro
 
     var channels *ChannelList
     err = c.parseResponse(body, &channels)
-    
+
     if err != nil {
         return nil, fmt.Errorf("pusher: Channels failed: %s", err)
     }
@@ -106,7 +106,7 @@ func (c *Client) Channel(name string, queryParameters map[string]string) (*Chann
     timestamp := c.stringTimestamp()
 
     urlPath := c.channelPath(name)
-    
+
     signature := Signature{c.key, c.secret, "GET", urlPath, timestamp, AuthVersion, "", queryParameters}
 
     body, err := c.get(c.fullUrl(urlPath), signature.EncodedQuery())
@@ -136,7 +136,7 @@ func (c *Client) Users(channelName string) (*UserList, error) {
         return nil, err
     }
     fmt.Println(body)
-    
+
     var users *UserList
     err = c.parseResponse(body, &users)
 
@@ -212,7 +212,7 @@ func (c *Client) jsonifyData(data, event string, channels []string) (string, err
     return string(b), nil
 }
 
-func (c *Client) parseResponse(body string, response interface{}) (error) {
+func (c *Client) parseResponse(body string, response interface{}) error {
     err := json.Unmarshal([]byte(body), &response)
     if err != nil {
         return err

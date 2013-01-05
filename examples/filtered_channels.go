@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-    client := pusher.NewClient("appid", "key", "secret", false)
+    client := pusher.NewClient("4115", "23ed642e81512118260e", "cd72de5494540704dcf1", false)
 
     done := make(chan bool)
 

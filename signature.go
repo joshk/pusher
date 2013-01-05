@@ -28,7 +28,6 @@ func (s OrderedAuthParts) Len() int           { return len(s) }
 func (s OrderedAuthParts) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s OrderedAuthParts) Less(i, j int) bool { return s[i].key < s[j].key }
 
-
 func (s *Signature) Sign() string {
     authParts := []*AuthPart{
         {"auth_key", s.key},
@@ -50,7 +49,7 @@ func (s *Signature) Sign() string {
     }
 
     authPartsQueryString := strings.Join(sortedAuthParts, "&")
-    completeAuthParts    := fmt.Sprintf("%s\n%s\n%s", s.method, s.path, authPartsQueryString)
+    completeAuthParts := fmt.Sprintf("%s\n%s\n%s", s.method, s.path, authPartsQueryString)
 
     return s.hmacSha256(completeAuthParts)
 }

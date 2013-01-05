@@ -8,10 +8,11 @@ import (
 
 func main() {
     workers := 100
+    messageCount := 5000
     messages := make(chan string)
     done := make(chan bool)
 
-    client := pusher.NewClient("appid", "key", "secret", false)
+    client := pusher.NewClient("34420", "87bdfd3a6320e83b9289", "f25dfe88fb26ebf75139", false)
 
     for i := 0; i < workers; i++ {
         go func() {
@@ -27,10 +28,12 @@ func main() {
     }
 
     go func() {
-        for i := 0; i < 5000; i++ {
+        for i := 0; i < messageCount; i++ {
             messages <- "test"
         }
         done <- true
+        close(messages)
+        close(done)
     }()
 
     select {
