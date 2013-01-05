@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "github.com/timonv/pusher"
+    "sort"
     "time"
 )
 
@@ -12,11 +13,17 @@ func main() {
     done := make(chan bool)
 
     go func() {
-        err := client.Publish("test", "test", "test")
+        users, err := client.Users("common")
         if err != nil {
             fmt.Printf("Error %s\n", err)
         } else {
-            fmt.Println("Message Published!")
+            ids := []int{}
+            for k := range users.List {
+                ids = append(ids, k)
+            }
+            sort.Ints(ids)
+            fmt.Println("User Count:", len(ids))
+            fmt.Println(ids)
         }
         done <- true
     }()

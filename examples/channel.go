@@ -12,11 +12,11 @@ func main() {
     done := make(chan bool)
 
     go func() {
-        err := client.Publish("test", "test", "test")
+        channel, err := client.Channel("common", nil)
         if err != nil {
             fmt.Printf("Error %s\n", err)
         } else {
-            fmt.Println("Message Published!")
+            fmt.Println(channel)
         }
         done <- true
     }()

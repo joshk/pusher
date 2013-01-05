@@ -11,16 +11,16 @@ func main() {
     messages := make(chan string)
     done := make(chan bool)
 
-    client := pusher.NewClient(appId, key, secret, false)
+    client := pusher.NewClient("appid", "key", "secret", false)
 
     for i := 0; i < workers; i++ {
         go func() {
             for data := range messages {
                 err := client.Publish(data, "test", "test")
                 if err != nil {
-                    fmt.Printf("E %s\n", err)
+                    fmt.Printf("E", err)
                 } else {
-                    fmt.Println(".")
+                    fmt.Print(".")
                 }
             }
         }()
@@ -35,9 +35,9 @@ func main() {
 
     select {
     case <-done:
-        fmt.Println("Done :-)")
+        fmt.Println("\nDone :-)")
     case <-time.After(1 * time.Minute):
-        fmt.Println("Timeout :-(")
+        fmt.Println("\nTimeout :-(")
     }
 
     fmt.Println("")

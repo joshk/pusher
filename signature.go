@@ -5,20 +5,54 @@ import (
     "crypto/md5"
     "crypto/sha256"
     "encoding/hex"
+    "fmt"
     "io"
     "net/url"
+    "sort"
     "strings"
 )
 
 type Signature struct {
     key, secret                                   string
     method, path, timestamp, authVersion, content string
+    queryParameters                               map[string]string
 }
 
+type AuthPart struct {
+    key, value string
+}
+
+type OrderedAuthParts []*AuthPart
+
+func (s OrderedAuthParts) Len() int           { return len(s) }
+func (s OrderedAuthParts) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s OrderedAuthParts) Less(i, j int) bool { return s[i].key < s[j].key }
+
+
 func (s *Signature) Sign() string {
-    authParts := strings.Join([]string{s.auth_key(), s.auth_timestamp(), s.auth_version(), s.body_md5()}, "&")
-    signatureContent := strings.Join([]string{s.method, s.path, authParts}, "\n")
-    return s.hmacSha256(signatureContent)
+    authParts := []*AuthPart{
+        {"auth_key", s.key},
+        {"auth_timestamp", s.timestamp},
+        {"auth_version", s.authVersion},
+        {"body_md5", s.md5Content()},
+    }
+
+    for k := range s.queryParameters {
+        authParts = append(authParts, &AuthPart{k, s.queryParameters[k]})
+    }
+
+    sort.Sort(OrderedAuthParts(authParts))
+
+    sortedAuthParts := []string{}
+    for index := range authParts {
+        newPart := fmt.Sprintf("%s=%s", authParts[index].key, authParts[index].value)
+        sortedAuthParts = append(sortedAuthParts, newPart)
+    }
+
+    authPartsQueryString := strings.Join(sortedAuthParts, "&")
+    completeAuthParts    := fmt.Sprintf("%s\n%s\n%s", s.method, s.path, authPartsQueryString)
+
+    return s.hmacSha256(completeAuthParts)
 }
 
 func (s *Signature) EncodedQuery() string {
@@ -28,6 +62,9 @@ func (s *Signature) EncodedQuery() string {
         "auth_version":   {s.authVersion},
         "body_md5":       {s.md5Content()},
         "auth_signature": {s.Sign()},
+    }
+    for k := range s.queryParameters {
+        query.Add(k, s.queryParameters[k])
     }
     return query.Encode()
 }

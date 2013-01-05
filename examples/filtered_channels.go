@@ -12,11 +12,15 @@ func main() {
     done := make(chan bool)
 
     go func() {
-        err := client.Publish("test", "test", "test")
+        queryParameters := map[string]string{
+            "info":             "user_count",
+            "filter_by_prefix": "presence-",
+        }
+        channels, err := client.Channels(queryParameters)
         if err != nil {
             fmt.Printf("Error %s\n", err)
         } else {
-            fmt.Println("Message Published!")
+            fmt.Println(channels)
         }
         done <- true
     }()

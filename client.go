@@ -26,6 +26,39 @@ type Payload struct {
     Data     string   `json:"data"`
 }
 
+type ChannelList struct {
+    List map[string]ChannelInfo `json:"channels"`
+}
+
+func (c *ChannelList) String() string {
+    format := "[channel count: %d, list: %+v]"
+    return fmt.Sprintf(format, len(c.List), c.List)
+}
+
+type ChannelInfo struct {
+    UserCount int `json:"user_count"`
+}
+
+type UserList struct {
+    List []UserInfo `json:"users"`
+}
+
+type UserInfo struct {
+    Id int `json:"id"`
+}
+
+type Channel struct {
+    Name              string
+    Occupied          bool `json:"occupied"`
+    UserCount         int  `json:"user_count",omitempty`
+    SubscriptionCount int  `json:"subscription_count",omitempty`
+}
+
+func (c *Channel) String() string {
+    format := "[name: %s, occupied: %t, user count: %d, subscription count: %d]"
+    return fmt.Sprintf(format, c.Name, c.Occupied, c.UserCount, c.SubscriptionCount)
+}
+
 func NewClient(appid, key, secret string, secure bool) *Client {
     return &Client{appid, key, secret, secure}
 }
@@ -35,23 +68,83 @@ func (c *Client) Publish(data, event string, channels ...string) error {
 
     content, err := c.jsonifyData(data, event, channels)
     if err != nil {
-        return err
+        return fmt.Errorf("pusher: Publish failed: %s", err)
     }
 
-    signature := Signature{c.key, c.secret, "POST", c.publishPath(), timestamp, AuthVersion, content}
+    signature := Signature{c.key, c.secret, "POST", c.publishPath(), timestamp, AuthVersion, content, nil}
 
-    err = c.post(content, c.publishUrl(), signature.EncodedQuery())
+    err = c.post(content, c.fullUrl(c.publishPath()), signature.EncodedQuery())
 
     return err
 }
 
-func (c *Client) jsonifyData(data, event string, channels []string) (string, error) {
-    content := Payload{event, channels, data}
-    b, err := json.Marshal(content)
+func (c *Client) AllChannels() (*ChannelList, error) {
+    return c.Channels(nil)
+}
+
+func (c *Client) Channels(queryParameters map[string]string) (*ChannelList, error) {
+    timestamp := c.stringTimestamp()
+
+    signature := Signature{c.key, c.secret, "GET", c.channelsPath(), timestamp, AuthVersion, "", queryParameters}
+
+    body, err := c.get(c.fullUrl(c.channelsPath()), signature.EncodedQuery())
     if err != nil {
-        return "", err
+        return nil, err
     }
-    return string(b), nil
+
+    var channels *ChannelList
+    err = c.parseResponse(body, &channels)
+    
+    if err != nil {
+        return nil, fmt.Errorf("pusher: Channels failed: %s", err)
+    }
+
+    return channels, nil
+}
+
+func (c *Client) Channel(name string, queryParameters map[string]string) (*Channel, error) {
+    timestamp := c.stringTimestamp()
+
+    urlPath := c.channelPath(name)
+    
+    signature := Signature{c.key, c.secret, "GET", urlPath, timestamp, AuthVersion, "", queryParameters}
+
+    body, err := c.get(c.fullUrl(urlPath), signature.EncodedQuery())
+    if err != nil {
+        return nil, err
+    }
+
+    var channel *Channel
+    err = c.parseResponse(body, &channel)
+
+    if err != nil {
+        return nil, fmt.Errorf("pusher: Channel failed: %s", err)
+    }
+
+    channel.Name = name
+
+    return channel, nil
+}
+
+func (c *Client) Users(channelName string) (*UserList, error) {
+    timestamp := c.stringTimestamp()
+
+    signature := Signature{c.key, c.secret, "GET", c.usersPath(channelName), timestamp, AuthVersion, "", nil}
+
+    body, err := c.get(c.fullUrl(c.usersPath(channelName)), signature.EncodedQuery())
+    if err != nil {
+        return nil, err
+    }
+    fmt.Println(body)
+    
+    var users *UserList
+    err = c.parseResponse(body, &users)
+
+    if err != nil {
+        return nil, fmt.Errorf("pusher: Users failed: %s", err)
+    }
+
+    return users, nil
 }
 
 func (c *Client) post(content string, fullUrl string, query string) error {
@@ -72,11 +165,58 @@ func (c *Client) post(content string, fullUrl string, query string) error {
 
     defer resp.Body.Close()
 
-    if resp.StatusCode == 401 {
+    if resp.StatusCode >= 400 {
         b, _ := ioutil.ReadAll(resp.Body)
         return fmt.Errorf("pusher: POST failed: %s", b)
     }
 
+    return nil
+}
+
+func (c *Client) get(fullUrl string, query string) (string, error) {
+    getUrl, err := url.Parse(fullUrl)
+    if err != nil {
+        return "", fmt.Errorf("pusher: GET failed: %s", err)
+    }
+
+    getUrl.Scheme = c.scheme()
+    getUrl.RawQuery = query
+
+    resp, err := http.Get(getUrl.String())
+    if err != nil {
+        return "", fmt.Errorf("pusher: GET failed: %s", err)
+    }
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode >= 400 {
+        b, _ := ioutil.ReadAll(resp.Body)
+        return "", fmt.Errorf("pusher: GET failed: %s", b)
+    }
+
+    fullBody, err := ioutil.ReadAll(resp.Body)
+
+    if err != nil {
+        return "", fmt.Errorf("pusher: GET failed: %s", err)
+    }
+
+    return string(fullBody), nil
+}
+
+func (c *Client) jsonifyData(data, event string, channels []string) (string, error) {
+    content := Payload{event, channels, data}
+    b, err := json.Marshal(content)
+    if err != nil {
+        return "", err
+    }
+    return string(b), nil
+}
+
+func (c *Client) parseResponse(body string, response interface{}) (error) {
+    err := json.Unmarshal([]byte(body), &response)
+    if err != nil {
+        return err
+    }
     return nil
 }
 
@@ -91,8 +231,20 @@ func (c *Client) publishPath() string {
     return fmt.Sprintf("/apps/%s/events", c.appid)
 }
 
-func (c *Client) publishUrl() string {
-    return fmt.Sprintf("http://%s%s", Endpoint, c.publishPath())
+func (c *Client) channelsPath() string {
+    return fmt.Sprintf("/apps/%s/channels", c.appid)
+}
+
+func (c *Client) channelPath(name string) string {
+    return fmt.Sprintf("/apps/%s/channels/%s", c.appid, name)
+}
+
+func (c *Client) usersPath(channelName string) string {
+    return fmt.Sprintf("/apps/%s/channels/%s/users", c.appid, channelName)
+}
+
+func (c *Client) fullUrl(path string) string {
+    return fmt.Sprintf("http://%s%s", Endpoint, path)
 }
 
 func (c *Client) stringTimestamp() string {
