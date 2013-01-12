@@ -1,0 +1,4 @@
+language: go
+script: go test ./...
+before_install: go version
+install: go get -d -v
