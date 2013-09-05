@@ -14,7 +14,8 @@ import (
 
 type Signature struct {
     key, secret                                   string
-    method, path, timestamp, authVersion, content string
+    method, path, timestamp, authVersion          string
+    content                                       []byte
     queryParameters                               map[string]string
 }
 
@@ -88,9 +89,9 @@ func (s *Signature) md5Content() string {
     return s.md5(s.content)
 }
 
-func (s *Signature) md5(content string) string {
+func (s *Signature) md5(content []byte) string {
     hash := md5.New()
-    io.WriteString(hash, content)
+    hash.Write(content)
     return hex.EncodeToString(hash.Sum(nil))
 }
 

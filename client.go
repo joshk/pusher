@@ -87,7 +87,7 @@ func (c *Client) AllChannels() (*ChannelList, error) {
 func (c *Client) Channels(queryParameters map[string]string) (*ChannelList, error) {
     timestamp := c.stringTimestamp()
 
-    signature := Signature{c.key, c.secret, "GET", c.channelsPath(), timestamp, AuthVersion, "", queryParameters}
+    signature := Signature{c.key, c.secret, "GET", c.channelsPath(), timestamp, AuthVersion, nil, queryParameters}
 
     body, err := c.get(c.fullUrl(c.channelsPath()), signature.EncodedQuery())
     if err != nil {
@@ -109,7 +109,7 @@ func (c *Client) Channel(name string, queryParameters map[string]string) (*Chann
 
     urlPath := c.channelPath(name)
 
-    signature := Signature{c.key, c.secret, "GET", urlPath, timestamp, AuthVersion, "", queryParameters}
+    signature := Signature{c.key, c.secret, "GET", urlPath, timestamp, AuthVersion, nil, queryParameters}
 
     body, err := c.get(c.fullUrl(urlPath), signature.EncodedQuery())
     if err != nil {
@@ -131,7 +131,7 @@ func (c *Client) Channel(name string, queryParameters map[string]string) (*Chann
 func (c *Client) Users(channelName string) (*UserList, error) {
     timestamp := c.stringTimestamp()
 
-    signature := Signature{c.key, c.secret, "GET", c.usersPath(channelName), timestamp, AuthVersion, "", nil}
+    signature := Signature{c.key, c.secret, "GET", c.usersPath(channelName), timestamp, AuthVersion, nil, nil}
 
     body, err := c.get(c.fullUrl(c.usersPath(channelName)), signature.EncodedQuery())
     if err != nil {
@@ -149,8 +149,8 @@ func (c *Client) Users(channelName string) (*UserList, error) {
     return users, nil
 }
 
-func (c *Client) post(content string, fullUrl string, query string) error {
-    buffer := bytes.NewBuffer([]byte(content))
+func (c *Client) post(content []byte, fullUrl string, query string) error {
+    buffer := bytes.NewBuffer(content)
 
     postUrl, err := url.Parse(fullUrl)
     if err != nil {
@@ -205,13 +205,13 @@ func (c *Client) get(fullUrl string, query string) (string, error) {
     return string(fullBody), nil
 }
 
-func (c *Client) jsonifyData(data, event string, channels []string) (string, error) {
+func (c *Client) jsonifyData(data, event string, channels []string) ([]byte, error) {
     content := Payload{event, channels, data}
     b, err := json.Marshal(content)
     if err != nil {
-        return "", err
+        return nil, err
     }
-    return string(b), nil
+    return b, nil
 }
 
 func (c *Client) parseResponse(body string, response interface{}) error {
