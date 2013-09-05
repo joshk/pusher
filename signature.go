@@ -13,10 +13,10 @@ import (
 )
 
 type Signature struct {
-    key, secret                                   string
-    method, path, timestamp, authVersion          string
-    content                                       []byte
-    queryParameters                               map[string]string
+    key, secret                          string
+    method, path, timestamp, authVersion string
+    content                              []byte
+    queryParameters                      map[string]string
 }
 
 type AuthPart struct {
