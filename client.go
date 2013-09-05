@@ -13,6 +13,8 @@ import (
 
 var Endpoint = "api.pusherapp.com"
 
+var HttpClient = http.Client{}
+
 const AuthVersion = "1.0"
 
 type Client struct {
@@ -158,7 +160,7 @@ func (c *Client) post(content string, fullUrl string, query string) error {
     postUrl.Scheme = c.scheme()
     postUrl.RawQuery = query
 
-    resp, err := http.Post(postUrl.String(), "application/json", buffer)
+    resp, err := HttpClient.Post(postUrl.String(), "application/json", buffer)
     if err != nil {
         return fmt.Errorf("pusher: POST failed: %s", err)
     }
@@ -182,7 +184,7 @@ func (c *Client) get(fullUrl string, query string) (string, error) {
     getUrl.Scheme = c.scheme()
     getUrl.RawQuery = query
 
-    resp, err := http.Get(getUrl.String())
+    resp, err := HttpClient.Get(getUrl.String())
     if err != nil {
         return "", fmt.Errorf("pusher: GET failed: %s", err)
     }
