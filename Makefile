@@ -6,7 +6,7 @@ examples: */**.go
 	done
 
 fmt: */**.go
-	go fmt ./...
+	gofmt -w -l -tabs=false -tabwidth=4 */**.go *.go
 
 test: */**.go
 	go test ./...
