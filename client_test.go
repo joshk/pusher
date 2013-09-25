@@ -64,7 +64,7 @@ func TestPublish(t *testing.T) {
 	url, _ := url.Parse(server.URL)
 
 	client := NewClient("1", "key", "secret", false)
-	client.SetHost(url.Host)
+	client.Host = url.Host
 	err := client.Publish("data", "event", "mychannel", "c2")
 
 	if err != nil {

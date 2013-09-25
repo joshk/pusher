@@ -70,10 +70,6 @@ func NewClient(appid, key, secret string, secure bool) *Client {
 	}
 }
 
-func (c *Client) SetHost(host string) {
-	c.Host = host
-}
-
 func (c *Client) Publish(data, event string, channels ...string) error {
 	timestamp := c.stringTimestamp()
 
