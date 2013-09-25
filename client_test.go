@@ -12,10 +12,6 @@ import (
 
 func setupTestServer(handler http.Handler) (server *httptest.Server) {
 	server = httptest.NewServer(handler)
-	url, _ := url.Parse(server.URL)
-	// FIXME: This is not thread-safe at all, and will not handle running tests in parallel.
-	//   The endpoint field should probably be moved to the Client struct.
-	Endpoint = url.Host
 	return
 }
 
@@ -65,10 +61,45 @@ func TestPublish(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient("1", "key", "secret", false)
+	url, _ := url.Parse(server.URL)
+
+	client := NewClient("1", "key", "secret")
+	client.Host = url.Host
 	err := client.Publish("data", "event", "mychannel", "c2")
 
 	if err != nil {
 		t.Errorf("Publish(): %v", err)
+	}
+}
+
+func TestFields(t *testing.T) {
+	client := NewClient("1", "key", "secret")
+
+	if client.appid != "1" {
+		t.Errorf("appid not set correctly")
+	}
+
+	if client.key != "key" {
+		t.Errorf("key not set correctly")
+	}
+
+	if client.secret != "secret" {
+		t.Errorf("secret not set correctly")
+	}
+}
+
+func TestDefaultHost(t *testing.T) {
+	client := NewClient("1", "key", "secret")
+
+	if client.Host != "api.pusherapp.com" {
+		t.Errorf("Host not set correctly")
+	}
+}
+
+func TestDefaultScheme(t *testing.T) {
+	client := NewClient("1", "key", "secret")
+
+	if client.Scheme != "http" {
+		t.Errorf("Scheme not set correctly")
 	}
 }

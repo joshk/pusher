@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-var Endpoint = "api.pusherapp.com"
-
 var HttpClient = http.Client{}
 
 const AuthVersion = "1.0"
@@ -20,6 +18,8 @@ const AuthVersion = "1.0"
 type Client struct {
 	appid, key, secret string
 	secure             bool
+	Host               string
+	Scheme             string
 }
 
 type Payload struct {
@@ -61,8 +61,14 @@ func (c *Channel) String() string {
 	return fmt.Sprintf(format, c.Name, c.Occupied, c.UserCount, c.SubscriptionCount)
 }
 
-func NewClient(appid, key, secret string, secure bool) *Client {
-	return &Client{appid, key, secret, secure}
+func NewClient(appid, key, secret string) *Client {
+	return &Client{
+		appid:  appid,
+		key:    key,
+		secret: secret,
+		Host:   "api.pusherapp.com",
+		Scheme: "http",
+	}
 }
 
 func (c *Client) Publish(data, event string, channels ...string) error {
@@ -157,7 +163,7 @@ func (c *Client) post(content []byte, fullUrl string, query string) error {
 		return err
 	}
 
-	postUrl.Scheme = c.scheme()
+	postUrl.Scheme = c.Scheme
 	postUrl.RawQuery = query
 
 	resp, err := HttpClient.Post(postUrl.String(), "application/json", buffer)
@@ -181,7 +187,7 @@ func (c *Client) get(fullUrl string, query string) (string, error) {
 		return "", fmt.Errorf("pusher: GET failed: %s", err)
 	}
 
-	getUrl.Scheme = c.scheme()
+	getUrl.Scheme = c.Scheme
 	getUrl.RawQuery = query
 
 	resp, err := HttpClient.Get(getUrl.String())
@@ -222,13 +228,6 @@ func (c *Client) parseResponse(body string, response interface{}) error {
 	return nil
 }
 
-func (c *Client) scheme() string {
-	if c.secure {
-		return "https"
-	}
-	return "http"
-}
-
 func (c *Client) publishPath() string {
 	return fmt.Sprintf("/apps/%s/events", c.appid)
 }
@@ -246,7 +245,7 @@ func (c *Client) usersPath(channelName string) string {
 }
 
 func (c *Client) fullUrl(path string) string {
-	return fmt.Sprintf("http://%s%s", Endpoint, path)
+	return fmt.Sprintf("http://%s%s", c.Host, path)
 }
 
 func (c *Client) stringTimestamp() string {
