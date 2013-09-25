@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"strconv"
 	"time"
-	"sync"
 )
 
 var HttpClient = http.Client{}
@@ -19,8 +18,7 @@ const AuthVersion = "1.0"
 type Client struct {
 	appid, key, secret string
 	secure             bool
-	host               string
-	lock sync.RWMutex
+	Host               string
 }
 
 type Payload struct {
@@ -68,20 +66,12 @@ func NewClient(appid, key, secret string, secure bool) *Client {
 		key: key,
 		secret: secret,
 		secure: secure,
-		host: "api.pusherapp.com",
+		Host: "api.pusherapp.com",
 	}
 }
 
 func (c *Client) SetHost(host string) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	c.host = host
-}
-
-func (c *Client) Host() string {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-	return c.host
+	c.Host = host
 }
 
 func (c *Client) Publish(data, event string, channels ...string) error {
@@ -265,7 +255,7 @@ func (c *Client) usersPath(channelName string) string {
 }
 
 func (c *Client) fullUrl(path string) string {
-	return fmt.Sprintf("http://%s%s", c.Host(), path)
+	return fmt.Sprintf("http://%s%s", c.Host, path)
 }
 
 func (c *Client) stringTimestamp() string {

@@ -91,7 +91,7 @@ func TestFields(t *testing.T) {
 func TestDefaultHost(t *testing.T) {
 	client := NewClient("1", "key", "secret", false)
 
-	if client.host != "api.pusherapp.com" {
+	if client.Host != "api.pusherapp.com" {
 		t.Errorf("host not set correctly")
 	}
 }
