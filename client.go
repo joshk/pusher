@@ -19,7 +19,7 @@ type Client struct {
 	appid, key, secret string
 	secure             bool
 	Host               string
-	Scheme string
+	Scheme             string
 }
 
 type Payload struct {
@@ -63,10 +63,10 @@ func (c *Channel) String() string {
 
 func NewClient(appid, key, secret string) *Client {
 	return &Client{
-		appid: appid,
-		key: key,
+		appid:  appid,
+		key:    key,
 		secret: secret,
-		Host: "api.pusherapp.com",
+		Host:   "api.pusherapp.com",
 		Scheme: "http",
 	}
 }
