@@ -63,7 +63,7 @@ func TestPublish(t *testing.T) {
 
 	url, _ := url.Parse(server.URL)
 
-	client := NewClient("1", "key", "secret", false)
+	client := NewClient("1", "key", "secret")
 	client.Host = url.Host
 	err := client.Publish("data", "event", "mychannel", "c2")
 
@@ -73,7 +73,7 @@ func TestPublish(t *testing.T) {
 }
 
 func TestFields(t *testing.T) {
-	client := NewClient("1", "key", "secret", false)
+	client := NewClient("1", "key", "secret")
 
 	if client.appid != "1" {
 		t.Errorf("appid not set correctly")
@@ -89,9 +89,17 @@ func TestFields(t *testing.T) {
 }
 
 func TestDefaultHost(t *testing.T) {
-	client := NewClient("1", "key", "secret", false)
+	client := NewClient("1", "key", "secret")
 
 	if client.Host != "api.pusherapp.com" {
-		t.Errorf("host not set correctly")
+		t.Errorf("Host not set correctly")
+	}
+}
+
+func TestDefaultScheme(t *testing.T) {
+	client := NewClient("1", "key", "secret")
+
+	if client.Scheme != "http" {
+		t.Errorf("Scheme not set correctly")
 	}
 }

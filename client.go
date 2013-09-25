@@ -19,6 +19,7 @@ type Client struct {
 	appid, key, secret string
 	secure             bool
 	Host               string
+	Scheme string
 }
 
 type Payload struct {
@@ -60,13 +61,13 @@ func (c *Channel) String() string {
 	return fmt.Sprintf(format, c.Name, c.Occupied, c.UserCount, c.SubscriptionCount)
 }
 
-func NewClient(appid, key, secret string, secure bool) *Client {
+func NewClient(appid, key, secret string) *Client {
 	return &Client{
 		appid: appid,
 		key: key,
 		secret: secret,
-		secure: secure,
 		Host: "api.pusherapp.com",
+		Scheme: "http",
 	}
 }
 
@@ -162,7 +163,7 @@ func (c *Client) post(content []byte, fullUrl string, query string) error {
 		return err
 	}
 
-	postUrl.Scheme = c.scheme()
+	postUrl.Scheme = c.Scheme
 	postUrl.RawQuery = query
 
 	resp, err := HttpClient.Post(postUrl.String(), "application/json", buffer)
@@ -186,7 +187,7 @@ func (c *Client) get(fullUrl string, query string) (string, error) {
 		return "", fmt.Errorf("pusher: GET failed: %s", err)
 	}
 
-	getUrl.Scheme = c.scheme()
+	getUrl.Scheme = c.Scheme
 	getUrl.RawQuery = query
 
 	resp, err := HttpClient.Get(getUrl.String())
@@ -225,13 +226,6 @@ func (c *Client) parseResponse(body string, response interface{}) error {
 		return err
 	}
 	return nil
-}
-
-func (c *Client) scheme() string {
-	if c.secure {
-		return "https"
-	}
-	return "http"
 }
 
 func (c *Client) publishPath() string {
